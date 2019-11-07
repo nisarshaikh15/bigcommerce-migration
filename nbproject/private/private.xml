@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/var/www/html/ziamond/src/Model/Table/CategoryCopyTable.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/ProductDetailsDto.php</file>
+            <file>file:/var/www/html/ziamond/src/Model/Table/YahooProductCatalogCopyTable.php</file>
+            <file>file:/var/www/html/ziamond/src/Utils/BigCommerce.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/BigcommerceCustomerInfo.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/CustomerAddressDto.php</file>
+            <file>file:/var/www/html/ziamond/src/Controller/HomeController.php</file>
+            <file>file:/var/www/html/ziamond/src/Model/Table/CentraliseProductsTable.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/OrderOptionDetails.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/ProductCopyDto.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/OptionsDto.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/BcProductInfoDto.php</file>
+            <file>file:/var/www/html/ziamond/config/app.constants.php</file>
+            <file>file:/var/www/html/ziamond/src/Model/Table/OrderheaderTable.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/AddOrderData.php</file>
+            <file>file:/var/www/html/ziamond/src/Controller/BigcommerceController.php</file>
+            <file>file:/var/www/html/ziamond/src/Model/Table/ProductOptionNewTable.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/OrderProductOptionDetails.php</file>
+            <file>file:/var/www/html/ziamond/src/Model/Table/YahooProductCatalogTable.php</file>
+            <file>file:/var/www/html/ziamond/src/Model/Table/CustomerTable.php</file>
+            <file>file:/var/www/html/ziamond/src/Model/Table/CategoryTable.php</file>
+            <file>file:/var/www/html/ziamond/src/Dto/OrderProductDetailDto.php</file>
+        </group>
+    </open-files>
+</project-private>
