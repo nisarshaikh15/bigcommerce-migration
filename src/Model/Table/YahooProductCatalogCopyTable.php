@@ -298,6 +298,7 @@ class YahooProductCatalogCopyTable extends Table
                     'Name'=>'yahoo_product_catalog_copy.name',
                     'Description'=>'product_catalog_images.description',
                     'Price'=>'yahoo_product_catalog_copy.price',
+                    'SalePrice'=>'yahoo_product_catalog.sale_price',
                     'Images'=>'product_catalog_images.image_link',
                     'AdditionImages'=>'product_catalog_images.additional_image_link',
                     'CategoryId'=>'category_copy.bc_cat_id'])
@@ -317,6 +318,7 @@ class YahooProductCatalogCopyTable extends Table
             $productDetails->name = $productRcords->Name;
             $productDetails->description = $productRcords->Description;
             $productDetails->price = $productRcords->Price;
+            $productDetails->salePrice = $productRcords->SalePrice;
             $productDetails->images = $productRcords->Images;
             $productDetails->additionalImages = $productRcords->AdditionImages;
             $productDetails->categoryId = $productRcords->CategoryId;

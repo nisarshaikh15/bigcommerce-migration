@@ -53,9 +53,9 @@ class CustomerTable extends Table
         
         $data = $thisTable->find()
                 ->contain(['customeraddress'])
-                ->where(['CustomerNumber IN'=>['1002851','1027840','1024968']])
-                ->offset(0)
-                ->limit(10)
+                ->where(['bcId IS NULL'])
+//                ->offset(0)
+                ->limit(100)
                 ->all();
         
         $result = $data->toArray();

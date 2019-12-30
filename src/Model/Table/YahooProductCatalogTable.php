@@ -346,11 +346,12 @@ class YahooProductCatalogTable extends Table
         
         $data = $thisTable->find()
                 ->contain(['product_catalog_images','category_copy'])
-                ->where(['yahoo_product_catalog.Added '=>1,'yahoo_product_catalog.code IN'=>['R1002T3','E1045C1','P2005','E1000R125CL','COGSDP25',]])
+                ->where(['yahoo_product_catalog.Added '=>1,'yahoo_product_catalog.code'=>'R1800C4'])
                 ->select(['ProductId'=>'yahoo_product_catalog.code',
                     'Name'=>'yahoo_product_catalog.name',
                     'Description'=>'product_catalog_images.description',
                     'Price'=>'yahoo_product_catalog.price',
+                    'SalePrice'=>'yahoo_product_catalog.sale_price',
                     'Images'=>'product_catalog_images.image_link',
                     'AdditionImages'=>'product_catalog_images.additional_image_link',
                     'CategoryId'=>'category_copy.bc_cat_id'])
@@ -370,6 +371,7 @@ class YahooProductCatalogTable extends Table
             $productDetails->name = $productRcords->Name;
             $productDetails->description = $productRcords->Description;
             $productDetails->price = $productRcords->Price;
+            $productDetails->salePrice = $productRcords->SalePrice;
             $productDetails->images = $productRcords->Images;
             $productDetails->additionalImages = $productRcords->AdditionImages;
             $productDetails->categoryId = $productRcords->CategoryId;

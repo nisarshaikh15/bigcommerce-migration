@@ -179,6 +179,7 @@ class ProductOptionNewTable extends Table
         
         if(count($result)>0){
             $optionNames = [];
+            
         }
         foreach ($result as $optionRecords){
             array_push($optionNames, $optionRecords->OptionValue);

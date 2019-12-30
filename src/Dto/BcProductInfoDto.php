@@ -16,7 +16,9 @@ namespace App\Dto;
 class BcProductInfoDto {
     public $name;
     public $price;
-    public $inventory_level;
+//    public $sale_price;
+//    public $retail_price;
+    //public $inventory_level;
     public $inventory_tracking;
     public $description;
     public $categories;

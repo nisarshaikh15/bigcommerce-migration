@@ -533,6 +533,18 @@ class OrderheaderTable extends Table
             'joinType'=>'LEFT'
         ]);
         
+        $thisTable->belongsTo('orderspecialinstructions',[
+            'foreignKey'=>'OrderNumber',
+            'bindingKey'=>'OrderNumber',
+            'joinType'=>'LEFT'
+        ]);
+        
+        $thisTable->hasMany('customermemo',[
+            'foreignKey'=>'OrderNumber',
+            'bindingKey'=>'OrderNumber',
+            'joinType'=>'LEFT'
+        ]);
+                
         $thisTable->hasMany('orderline',[
             'foreignKey'=>'OrderNumber',
             'bindingKey'=>'OrderNumber',
@@ -540,10 +552,10 @@ class OrderheaderTable extends Table
         ])->conditions(['orderline.item_name IS NOT NULL']);
         
         $data = $thisTable->find()
-                ->contain(['customer','orderline'])
-                ->where(['orderheader.OrderNumber IN'=>['1044515']])
-                ->offset(0)
-                ->limit(10)
+                ->contain(['customer','orderline','orderspecialinstructions','customermemo'])
+                ->where(['customer.bcId IS NOT NULL','orderheader.OrderNumber IN'=>[1024721,1001956,1025173,1027436,1020256,1014148,1018920,1026317,1021275,1008462,1025105,1024384,1024028,1003013,1002657,1025375,1007043,1009062,1013091,1020221,1014084,1009796,1009489,1020256,1010086,1011907,1028692,1007764,1001073,1035120,1012851,1001629,1016788,1021790,1012852,1034843,1017561,1025571,1030991,1027369,1004381,1018094,1018025,1020950,1007035,1017425,1008297,1012952,1018727,1007442]])
+//                ->offset(0)
+                ->limit(100)
                 ->all();
         $results = $data->toArray();
         
@@ -554,9 +566,19 @@ class OrderheaderTable extends Table
             $orderDetails = new \App\Dto\AddOrderData();
             $orderDetails->status_id = $orderRcords->BcOrderStatus;
             $orderDetails->customer_id = $orderRcords->customer->bcId;
-            $orderDetails->staff_notes = "Order Number => ".$orderRcords->OrderNumber;
+            $memoInfo = "\n\n ====   MEMO ==== \n\n";
+            $memoNumber = 1;
+            foreach ($orderRcords->customermemo as $memo) {
+                $memoInfo .= $memoNumber." ==> ".$memo->Memo."\n\n";
+                $memoNumber++;
+            }
+            $orderDetails->customer_message = $orderRcords->orderspecialinstructions->Instructions == null?"":$orderRcords->orderspecialinstructions->Instructions;
+            
+            $orderDetails->staff_notes = $this->getStaffNotes($orderRcords).$memoInfo;
             $date = new \Cake\Chronos\Date($orderRcords->OrderDate);
             $orderDetails->date_created = $date->toRfc2822String();
+//            $orderDetails->total_ex_tax = 800;
+//            $orderDetails->total_inc_tax = 900;
             $addressDetails = new \App\Dto\AddressDetailsDto();
             $addressDetails->city = $orderRcords->customer->City;
             $addressDetails->company = "";
@@ -573,39 +595,57 @@ class OrderheaderTable extends Table
             $orderDetails->billing_address = $addressDetails;
             $orderDetails->shipping_addresses = [$addressDetails];
             $products = [];
+            $taxPrice = 0;
+            $totalPrice = 0;
             foreach ($orderRcords->orderline as $orderInfo) {
-                
-                
                 if($orderInfo->bc_product_id == NULL){
                     $productDetails = new \App\Dto\OrderProductDetailDto();
                     $productDetails->name = $orderInfo->item_name;
-                    $productDetails->price_ex_tax = $orderInfo->Price;
-                    $productDetails->price_inc_tax = $orderInfo->Price;
-                    $productDetails->quantity = $orderInfo->Quantity;
                 }else{
                     $productDetails = new \App\Dto\OrderProductOptionDetails();
-                    $productDetails->price_ex_tax = $orderInfo->Price;
-                    $productDetails->price_inc_tax = $orderInfo->Price;
-                    $productDetails->quantity = $orderInfo->Quantity;
                     $productDetails->product_id = $orderInfo->bc_product_id;
-                    $options = explode(',', $orderInfo->bc_option_id);
+                    
                     $orderOptions = [];
-                    foreach ($options as $optionValue) {
-                        $optionDetails = new \App\Dto\OrderOptionDetails();
-                        $optionDetails->id = $optionValue;
-                        $optionDetails->value = "100";
-                        array_push($orderOptions, $optionDetails);
+                    if($orderInfo->SizeId){
+                        $sizeId = explode(',', $orderInfo->SizeId);
+                        $sizeDetails = new \App\Dto\OrderOptionDetails();
+                        $sizeDetails->id = $sizeId[0];
+                        $sizeDetails->value = $sizeId[1];
+                        array_push($orderOptions, $sizeDetails);
+                    }
+                    if($orderInfo->ColorId){
+                        $colorId = explode(',', $orderInfo->ColorId);
+                        $colorDetails = new \App\Dto\OrderOptionDetails();
+                        $colorDetails->id = $colorId[0];
+                        $colorDetails->value = $colorId[1];
+                        array_push($orderOptions, $colorDetails);
+                    }
+                    if($orderInfo->StyleId){
+                        $styleId = explode(',', $orderInfo->StyleId);
+                        $styleDetails = new \App\Dto\OrderOptionDetails();
+                        $styleDetails->id = $styleId[0];
+                        $styleDetails->value = $styleId[1];
+                        array_push($orderOptions, $styleDetails);
                     }
                     $productDetails->product_options = $orderOptions;
                     
                 }
+                $productDetails->price_ex_tax = $orderInfo->Price;
+                $productDetails->price_inc_tax = $orderInfo->Price;
+                $productDetails->quantity = $orderInfo->Quantity;
                 $price = $orderInfo->Price;
                 if($price >= 0 ){
+                    $totalPrice = $totalPrice + $price;
                     array_push($products, $productDetails);
                 }else{
                     $orderDetails->discount_amount = abs($price);
                 }
+                $taxPrice = $taxPrice + $orderInfo->Tax;
+                
             }
+            $orderDetails->total_ex_tax = $totalPrice - $orderDetails->discount_amount;
+            $orderDetails->total_inc_tax = $totalPrice + $taxPrice - $orderDetails->discount_amount;
+            //print_r($totalPrice);
             $orderDetails->products = $products;
             if(count($products)>0){
                 array_push($orders, $orderDetails);
@@ -613,5 +653,27 @@ class OrderheaderTable extends Table
         }
 //        $thisTable->saveMany($results);
         return $orders;
+    }
+    
+    private function getStaffNotes($orderData) {
+        $staffNote = "OM Order Number => ".$orderData->OrderNumber."\n";
+        $staffNote .= "Yahoo Order Number => ".$orderData->OrderID."\n";
+        $staffNote .= "OM Customer Number => ".$orderData->OrderNumber."\n";
+        $staffNote .= "Order Balance => ".$orderData->OrderBalance."\n";
+        $staffNote .= "CreditCardAVSResult/CreditCardCCVResult => ".$orderData->CreditCardAVSResult."/".$orderData->CreditCardCCVResult."\n";
+        $staffNote .= "Order Method => ".$orderData->BcOrderType."\n";
+        $staffNote .= "Flags => "."\n";
+        $staffNote .= $orderData->customer->DoNotMailFlag == 1?"Do Not Mail Flag : True":"Do Not Mail Flag : False"."\n";
+        $staffNote .= $orderData->customer->NixieFlag == 1?"Nixie Flag : True":"Nixie Flag : False"."\n";
+        $staffNote .= $orderData->customer->BadDebtFlag == 1?"Bad Debt Flag : True":"Bad Debt Flag : False"."\n";
+        $staffNote .= $orderData->customer->DoNotRentFlag == 1?"Do Not Rent Flag : True":"Do Not Rent Flag : False"."\n";
+        $staffNote .= $orderData->customer->DeceasedFlag == 1?"Deceased Flag : True":"Deceased Flag : False"."\n";
+        $staffNote .= $orderData->customer->BusinessFlag == 1?"Business Flag : True":"Business Flag : False"."\n";
+        $staffNote .= $orderData->customer->NoAVSFlag == 1?"No AVS Flag : True":"No AVS Flag : False"."\n";
+        $staffNote .= $orderData->customer->DoNotEmail == 1?"Do Not E-Mail : True":"Do Not E-Mail : False"."\n";
+        $staffNote .= $orderData->customer->DoNotCall == 1?"Do Not Call Flag : True":"Do Not Call Flag : False"."\n";
+        $staffNote .= $orderData->customer->BankruptFlag == 1?"Bankrupt Flag : True":"Bankrupt Flag : False"."\n";
+        //print_r($staffNote);
+        return $staffNote;
     }
 }

@@ -9,17 +9,17 @@
 namespace App\Dto;
 
 /**
- * Description of CreateCsvProductDto
+ * Description of BcOptionsDetailsDto
  *
  * @author user
  */
-class CreateCsvProductDto {
+class BcOptionsDetailsDto {
+    public $itemCode;
     public $productId;
-    public $name;
-    public $description;
-    public $price;
-    public $salePrice;
-    public $images;
-    public $additionalImages;
-    public $categoryId;
+    public $sizeLable;
+    public $colorLable;
+    public $styleLable;
+    public $sizeNumber;
+    public $colorNumber;
+    public $styleNumber;
 }

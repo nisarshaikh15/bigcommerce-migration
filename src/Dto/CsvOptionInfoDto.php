@@ -16,4 +16,5 @@ namespace App\Dto;
 class CsvOptionInfoDto {
     public $optionName;
     public $optionValue;
+    public $shortCodes;
 }

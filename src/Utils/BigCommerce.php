@@ -48,7 +48,7 @@ class BigCommerce {
               return NULL;
             } else {
                 \Cake\Log\Log::info('response while adding products %s'.$response);
-                //echo json_encode($response);
+                echo json_encode($response);
               return json_decode($response);
             }
     }
@@ -151,7 +151,7 @@ class BigCommerce {
 
         
         curl_setopt_array($curl, array(
-          CURLOPT_URL => "https://api.bigcommerce.com/stores/".STORE_HASH."/v2/orders/",
+          CURLOPT_URL => "https://api.bigcommerce.com/stores/".STORE_HASH."/v2/orders",
           CURLOPT_RETURNTRANSFER => true,
           CURLOPT_ENCODING => "",
           CURLOPT_MAXREDIRS => 10,
@@ -159,7 +159,7 @@ class BigCommerce {
           CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
           CURLOPT_CUSTOMREQUEST => "POST",
           CURLOPT_POSTFIELDS => $orderData,
-          CURLOPT_HTTPHEADER => array(
+  CURLOPT_HTTPHEADER => array(
             "accept: application/json",
             "content-type: application/json",
             "x-auth-client:".CLIENT_ID,

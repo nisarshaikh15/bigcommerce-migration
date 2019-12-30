@@ -29,20 +29,27 @@ class BigcommerceController extends AppController
             $productInfo = new \App\Dto\BcProductInfoDto();
             $productInfo->name = $productRecord->name;
             $productInfo->price = $productRecord->price;
-            $productInfo->inventory_level = 10;
-            $productInfo->inventory_tracking = 'product';
-            $productInfo->description = $productRecord->description;
+            //$productInfo->retail_price = $productRecord->price;
+            if($productRecord->salePrice){
+                $productInfo->sale_price = $productRecord->salePrice;
+            }
+            //$productInfo->inventory_level = 10;
+            $productInfo->sku = $productRecord->productId;
+            $productInfo->inventory_tracking = 'none';
+            $productInfo->description = $productRecord->description == NULL ?"":$productRecord->description;
             $productInfo->categories = [$productRecord->categoryId];
+            //$productInfo->images = [];
             $productInfo->images = $this->getImages($productRecord->images,$productRecord->additionalImages);
-            $productInfo->variants = $this->getVariants($productRecord->productId,$productRecord->price);
             
-            //echo json_encode($productInfo);
+            $productInfo->variants = $this->getVariants($productRecord->productId,$productRecord->price,$productRecord->salePrice);
             
             $productDetails = \App\Utils\BigCommerce::createProduct(json_encode($productInfo));
-            
+//            echo '<pre>';
+//            print_r($productDetails);
             if($productDetails != null){
                 if($productDetails->data->options){
                     $optionId = $this->getOptionId($productDetails->data->options);
+                    $optionDetails = $this->updateOption($productDetails->data->options,$productRecord->productId);
                     $productId = $productDetails->data->id;
                     $productIdAdded = $yahooProducyTable->addProductId($productRecord->productId,$productDetails->data->id,implode(',', $optionId));
                     echo '<pre>';
@@ -54,8 +61,6 @@ class BigcommerceController extends AppController
             }else{
                 echo "Response Is Empty";
             }
-            
-            
             $controllerTime = time();
             echo json_encode("controller request end time ===> ".$controllerTime)."\n";
         
@@ -75,6 +80,16 @@ class BigcommerceController extends AppController
             return NULL;
         }
     }
+    
+    private function updateOption($optionList,$productId) {
+        foreach ($optionList as $options) {
+            foreach ($options->option_values as $option) {
+                $productOptionTable = new \App\Model\Table\ProductOptionFinalTable();
+                $productData = $productOptionTable->updateOption($option->label,$productId,$options->id,$option->id);
+            }
+        }
+    }
+    
     public function updateProductOptions() {
         $this->autoRender = FALSE;
         set_time_limit(6000);
@@ -91,9 +106,10 @@ class BigcommerceController extends AppController
     }
     private function getImages($image,$additionalImages) {
         if($image == "" || $image == NULL ){
-            return "";
+            return [];
         }
         $images = [];
+        
         $imageInfo = new \App\Dto\BcImagesInfoDto();
         $imageInfo->is_thumbnail = TRUE;
         $imageInfo->image_url = $image;
@@ -113,8 +129,8 @@ class BigcommerceController extends AppController
         return $images;
     }
     
-    private function getVariants($productId,$price) {
-        $productOptionTable = new \App\Model\Table\ProductOptionNewTable();
+    private function getVariants($productId,$price,$salePrice) {
+        $productOptionTable = new \App\Model\Table\ProductOptionFinalTable();
         $optionNames = $productOptionTable->getOptionNames($productId);
         $optionCount = count($optionNames);
         if($optionCount>0){
@@ -124,6 +140,7 @@ class BigcommerceController extends AppController
                 array_push($optionInfo, $optionValues);
             }
             $mainOptionArr = [];
+            $shortcode1 = 0;
             foreach ($optionInfo[0]->optionValue as $options1){
                 $optionData1 = $this->createBcOptions($optionInfo[0]->optionName, $options1);
                 if($optionCount==1){
@@ -131,13 +148,19 @@ class BigcommerceController extends AppController
                     array_push($optionArr, $optionData1);
                     $variantOptionDetails = new \App\Dto\VariantOptionDto();
                     $variantOptionDetails->option_values = $optionArr;
-                    $variantOptionDetails->sku = "SKU-".$productId."-".mt_rand();
+                    $variantOptionDetails->sku = $productId."-".$optionInfo[0]->shortCodes[$shortcode1];
                     $variantOptionDetails->price = $this->getPrice($price,$optionData1);
-                    
+                    $variantOptionDetails->retail_price = $this->getPrice($price,$optionData1);
+                    if($salePrice){
+                        $variantOptionDetails->sale_price = $this->getPrice($salePrice,$optionData1);
+                        
+                    }
                     array_push($mainOptionArr, $variantOptionDetails);
                 }
                 if($optionCount>1){
+                    $shortcode2 = 0;
                     foreach ($optionInfo[1]->optionValue as $options2){
+                        
                         $optionData2 = $this->createBcOptions($optionInfo[1]->optionName, $options2);
                         if($optionCount==2){
                             $optionArr = [];
@@ -146,12 +169,17 @@ class BigcommerceController extends AppController
                             
                             $variantOptionDetails = new \App\Dto\VariantOptionDto();
                             $variantOptionDetails->option_values = $optionArr;
-                            $variantOptionDetails->sku = "SKU-".$productId."-".mt_rand();
+                            $variantOptionDetails->sku = $productId."-".$optionInfo[1]->shortCodes[$shortcode2]."-".$optionInfo[0]->shortCodes[$shortcode1];
                             $variantOptionDetails->price = $this->getPrice($price,$optionData1,$optionData2);
-                    
+                            $variantOptionDetails->retail_price = $this->getPrice($price,$optionData1,$optionData2);
+                            if($salePrice){
+                                $variantOptionDetails->sale_price = $this->getPrice($salePrice,$optionData1,$optionData2);
+                                
+                            }
                             array_push($mainOptionArr, $variantOptionDetails);
                         }
                         if($optionCount>2){
+                            $shortcode3 = 0;
                             foreach ($optionInfo[2]->optionValue as $options3){
                                 $optionName = $optionInfo[2]->optionName;
                                 $optionData3 = $this->createBcOptions($optionName, $options3);
@@ -163,12 +191,17 @@ class BigcommerceController extends AppController
                                     
                                     $variantOptionDetails = new \App\Dto\VariantOptionDto();
                                     $variantOptionDetails->option_values = $optionArr;
-                                    $variantOptionDetails->sku = "SKU-".$productId."-".mt_rand();
+                                    $variantOptionDetails->sku = $productId."-".$optionInfo[2]->shortCodes[$shortcode3]."-".$optionInfo[1]->shortCodes[$shortcode2]."-".$optionInfo[0]->shortCodes[$shortcode1];
                                     $variantOptionDetails->price = $this->getPrice($price,$optionData1,$optionData2,$optionData3);
-
+                                    $variantOptionDetails->retail_price = $this->getPrice($price,$optionData1,$optionData2,$optionData3);
+                                    if($salePrice){
+                                        $variantOptionDetails->sale_price = $this->getPrice($salePrice,$optionData1,$optionData2,$optionData3);
+                                        
+                                    }
                                     array_push($mainOptionArr, $variantOptionDetails);
                                 }
                                 if($optionCount>3){
+                                    $shortcode4 = 0;
                                     foreach ($optionInfo[3]->optionValue as $options4){
                                         $optionName = $optionInfo[3]->optionName;
                                         $optionData4 = $this->createBcOptions($optionName, $options4);
@@ -181,17 +214,25 @@ class BigcommerceController extends AppController
                                             
                                             $variantOptionDetails = new \App\Dto\VariantOptionDto();
                                             $variantOptionDetails->option_values = $optionArr;
-                                            $variantOptionDetails->sku = "SKU-".$productId."-".mt_rand();
+                                            $variantOptionDetails->sku = $productId."-".$optionInfo[0]->shortCodes[$shortcode1]."-".$optionInfo[1]->shortCodes[$shortcode2]."-".$optionInfo[2]->shortCodes[$shortcode3]."-".$optionInfo[3]->shortCodes[$shortcode4];
                                             $variantOptionDetails->price = $this->getPrice($price,$optionData1,$optionData2,$optionData3,$optionData4);
-
+                                            $variantOptionDetails->retail_price = $this->getPrice($price,$optionData1,$optionData2,$optionData3,$optionData4);
+                                            if($salePrice){
+                                                $variantOptionDetails->sale_price = $this->getPrice($salePrice,$optionData1,$optionData2,$optionData3,$optionData4);
+                                                
+                                            }
                                             array_push($mainOptionArr, $variantOptionDetails);
                                         }
+                                        $shortcode4++;
                                     }
                                 }
+                                $shortcode3++;
                             }
                         }
+                        $shortcode2++;
                     }
                 }
+                $shortcode1++;
             }
             return $mainOptionArr;
         }
@@ -210,32 +251,40 @@ class BigcommerceController extends AppController
         if($optionData1 != null){
             if(preg_match("/{$search}/i", $optionData1->label)){
                 $dollarPos = strpos($optionData1->label, '$');
-                //$bracetPos = strpos(substr($optionData1->label,$dollarPos + 1), ')');
-                $extraPrice = intval(substr($optionData1->label,$dollarPos + 1));
+                if(strpos($optionData1->label, '$')){
+                    $extraPrice = intval(substr($optionData1->label,$dollarPos + 1));
+                }
             }
         }
         if($optionData2 != null){
             if(preg_match("/{$search}/i", $optionData2->label)){
                 $dollarPos = strpos($optionData2->label, '$');
-                //$bracetPos = strpos(substr($optionData2->label,$dollarPos + 1), ')');
-                $extraPrice = $extraPrice + intval(substr($optionData2->label,$dollarPos + 1));
+                
+                if(strpos($optionData2->label, '$')){
+                    $extraPrice = $extraPrice + intval(substr($optionData2->label,$dollarPos + 1));
+                }
+                
+                
             }
         }
         if($optionData3 != null){
             if(preg_match("/{$search}/i", $optionData3->label)){
                 $dollarPos = strpos($optionData3->label, '$');
-                //$bracetPos = strpos(substr($optionData3->label,$dollarPos + 1), ')');
-                $extraPrice = $extraPrice + intval(substr($optionData3->label,$dollarPos + 1));
+                if(strpos($optionData3->label, '$')){
+                    $extraPrice = $extraPrice + intval(substr($optionData3->label,$dollarPos + 1));
+                }
             }
         }
         if($optionData4 != null){
             if(preg_match("/{$search}/i", $optionData4->label)){
                 $dollarPos = strpos($optionData4->label, '$');
-                //$bracetPos = strpos(substr($optionData4->label,$dollarPos + 1), ')');
-                $extraPrice = $extraPrice + intval(substr($optionData4->label,$dollarPos + 1));
+                if(strpos($optionData4->label, '$')){
+                    $extraPrice = $extraPrice + intval(substr($optionData4->label,$dollarPos + 1));
+                }
             }
         }
-        return intval($price) + $extraPrice;;
+        //print_r('price '.$extraPrice);
+        return intval($price) + $extraPrice;
     }
     
     public function createCategory() {
@@ -248,9 +297,9 @@ class BigcommerceController extends AppController
         foreach ($category as $categoryInfo){
             
               //to Add main Category
-//            $response = $this->createCategoryBg($categoryInfo,$categoryInfo->parentId);
-//            $categoryId = json_decode($response);
-//            $added = $categoryTable->addBcCategory($categoryId->data->id, $categoryInfo->categoryId);
+            $response = $this->createCategoryBg($categoryInfo,$categoryInfo->parentId);
+            $categoryId = json_decode($response);
+            $added = $categoryTable->addBcCategory($categoryId->data->id, $categoryInfo->categoryId);
             
             $categoryInfo->subCategory = $categoryTable->getCategory($categoryInfo->categoryId);
             
@@ -265,9 +314,9 @@ class BigcommerceController extends AppController
                     if($subCategoryInfo->subCategory != NULL){
                         foreach ($subCategoryInfo->subCategory as $subCategoryList){
                             //To add sub sub Category
-                            $response = $this->createCategoryBg($subCategoryList,$subCategoryInfo->parentId);
-                            $categoryId = json_decode($response);
-                            $added = $categoryTable->addBcCategory($categoryId->data->id, $subCategoryList->categoryId);
+//                            $response = $this->createCategoryBg($subCategoryList,$subCategoryInfo->parentId);
+//                            $categoryId = json_decode($response);
+//                            $added = $categoryTable->addBcCategory($categoryId->data->id, $subCategoryList->categoryId);
 
                         }
                     }
@@ -355,6 +404,8 @@ class BigcommerceController extends AppController
     
     public function createCustomer() {
         $this->autoRender = FALSE;
+        echo json_encode("controller request time ===> ".time())."\n";
+        set_time_limit(60000);
         $customerTable = new \App\Model\Table\CustomerTable();
         
         $customers = $customerTable->getCustomers();
@@ -365,18 +416,25 @@ class BigcommerceController extends AppController
             print_r($customerData[0]->email);
             $customerTable->updateCustomers($customerData[0]->email,$customerDetails->data[0]->id);
         }
+        echo json_encode("controller end time ===> ".time())."\n";
     }
     
     public function createOrder() {
         $this->autoRender = FALSE;
+        echo json_encode("controller request time ===> ".time())."\n";
         
         $orderHeaderTable = new \App\Model\Table\OrderheaderTable();
         
         $orders = $orderHeaderTable->getOrders();
         
         foreach ($orders as $orderData) {
-            //echo json_encode($orderData);
+//            echo '<pre>';
+//            print_r($orderData);
             $productDetails = \App\Utils\BigCommerce::createOrder(json_encode($orderData));
         }
+        echo json_encode("controller end time ===> ".time())."\n";
+        
     }
+    
+    
 }

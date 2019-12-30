@@ -182,4 +182,28 @@ class HomeController extends AppController
             }            
         }
     }
+    
+    public function addBcOptions() {
+        $this->autoRender = FALSE;
+        set_time_limit(6000);
+        
+        $orderlineTable = new \App\Model\Table\OrderlineTable();
+        $orders = $orderlineTable->getOrders();
+        
+        $optionTable = new \App\Model\Table\ProductOptionFinalTable();
+        foreach ($orders as $orderInfo) {
+            $sizeInfo = NULL;
+            $colorInfo = NULL;
+            $styleInfo = NULL;
+            $sizeInfo = $optionTable->getOptionDetails($orderInfo->sizeLable, $orderInfo->productId,$orderInfo->sizeNumber);
+            if($orderInfo->colorLable){
+                $colorInfo = $optionTable->getOptionDetails($orderInfo->colorLable, $orderInfo->productId,$orderInfo->colorNumber);
+            }
+            if($orderInfo->styleLable){
+                $styleInfo = $optionTable->getOptionDetails($orderInfo->styleLable, $orderInfo->productId,$orderInfo->styleNumber);
+            }
+            
+            $orders = $orderlineTable->updateOrdersOptionId($orderInfo->itemCode,$sizeInfo,$colorInfo,$styleInfo);
+        }
+    }
 }

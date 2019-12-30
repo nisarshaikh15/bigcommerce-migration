@@ -9,15 +9,12 @@
 namespace App\Dto;
 
 /**
- * Description of OrderProductOptionDetails
+ * Description of BcOptionDetailsDto
  *
  * @author user
  */
-class OrderProductOptionDetails {
-    public $quantity;
-    public $price_inc_tax;
-    public $price_ex_tax;
-    public $product_id;
-    //public $variant_id;
-    public $product_options;
+class BcOptionDetailsDto {
+    public $optionNameId;
+    public $optionId;
+    public $option;
 }

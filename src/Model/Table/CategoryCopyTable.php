@@ -116,6 +116,7 @@ class CategoryCopyTable extends Table
         $data = $thisTable->find()
                 ->where(['parent_id'=> $parentId,'consolidate'=>0])
                 ->select(['category_name_REVISED','cid','bc_cat_id'])
+                //->limit(1)
                 ->all();
         
         $results = $data->toArray();

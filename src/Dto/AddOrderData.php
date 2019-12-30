@@ -16,6 +16,8 @@ namespace App\Dto;
 class AddOrderData {
     public $status_id;
     public $customer_id;
+//    public $customer_message;
+//    public $staff_notes;
     public $billing_address;
     public $shipping_addresses;
     public $products;
